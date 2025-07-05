@@ -66,6 +66,18 @@
             border-radius: 10px;
             border: 2px solid #1f2937;
         }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
         details > summary {
             list-style: none;
         }
@@ -91,6 +103,7 @@
             <p id="subtitle" class="text-lg text-gray-400">Top 1000 Binance Altcoins (USDT) Ranked by Philakone's Strategy</p>
             <div class="mt-4 flex justify-center items-center space-x-2">
                 <select id="timeframe-select" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="15m">15 Minute</option>
                     <option value="30m">30 Minute</option>
                     <option value="1h">1 Hour</option>
                     <option value="4h" selected>4 Hour</option>
@@ -99,6 +112,9 @@
                 <button id="refresh-btn" class="px-5 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors">Refresh</button>
                 <button id="set-default-btn" class="px-5 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors">Set as Default</button>
             </div>
+            <button id="settings-btn" class="absolute top-0 right-0 p-2 text-gray-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-settings"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
         </header>
 
         <main id="app-container">
@@ -140,20 +156,71 @@
                         </summary>
                         <div class="mt-4 text-gray-300 space-y-4 border-t border-gray-700 pt-4">
                             <div>
-                                <h4 class="font-bold text-indigo-400">1. RSI Bullish Divergence (50 Points)</h4>
-                                <p class="text-sm mt-1">The primary entry signal. This occurs when the price makes a new low but the RSI makes a higher low, signaling weakening downward momentum and a likely reversal.</p>
+                                <h4 class="font-bold text-indigo-400">Scoring System</h4>
+                                <p class="text-sm mt-1">The "Scan Score" is calculated based on the following criteria for your selected timeframe. The "Confluence Score" is a weighted average of scores across multiple timeframes for the top-ranked coins, giving more importance to your primary scan timeframe.</p>
                             </div>
                             <div>
-                                <h4 class="font-bold text-indigo-400">2. MACD Confirmation (20 Points)</h4>
-                                <p class="text-sm mt-1">A strong confirmation signal. Points are awarded for a bullish MACD crossover (fast line crossing above slow line) that occurs below the zero line, indicating a potential reversal from a downtrend.</p>
+                                <h4 class="font-bold text-indigo-400">RSI (50 Points Total)</h4>
+                                <ul class="list-disc list-inside text-sm mt-1 space-y-1">
+                                    <li><span class="text-green-400 font-bold">✓</span> RSI Bullish Divergence: <strong>+50 pts</strong></li>
+                                    <li>(Visual Only) RSI in Bull Zone (RSI > 40)</li>
+                                </ul>
                             </div>
                             <div>
-                                <h4 class="font-bold text-indigo-400">3. Overall Trend Confirmation (20 Points)</h4>
-                                <p class="text-sm mt-1">Confirms the underlying trend is favorable. Points are awarded if the price is trading above the 200-period EMA (10 pts) and the 55-period EMA (10 pts).</p>
+                                <h4 class="font-bold text-indigo-400">MACD (20 Points Total)</h4>
+                                 <ul class="list-disc list-inside text-sm mt-1 space-y-1">
+                                    <li><span class="text-green-400 font-bold">✓</span> Bullish Crossover from Negative: <strong>+20 pts</strong></li>
+                                    <li>(Visual Only) Histogram Ticking Up</li>
+                                </ul>
                             </div>
                             <div>
-                                <h4 class="font-bold text-indigo-400">4. Supporting Factors (10 Points)</h4>
-                                <p class="text-sm mt-1">Points are awarded for higher than average volume (5 pts) and high volatility (5 pts) to confirm interest and opportunity in the coin.</p>
+                                <h4 class="font-bold text-indigo-400">Trend (20 Points Total)</h4>
+                                 <ul class="list-disc list-inside text-sm mt-1 space-y-1">
+                                    <li><span class="text-green-400 font-bold">✓</span> Price > 200 EMA: <strong>+10 pts</strong></li>
+                                    <li><span class="text-green-400 font-bold">✓</span> Price > 55 EMA: <strong>+10 pts</strong></li>
+                                     <li>(Visual Only) Golden Cross</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-indigo-400">Other Factors (10 Points Total)</h4>
+                                <ul class="list-disc list-inside text-sm mt-1 space-y-1">
+                                    <li><span class="text-green-400 font-bold">✓</span> High Volume: <strong>+5 pts</strong></li>
+                                    <li><span class="text-green-400 font-bold">✓</span> High Volatility: <strong>+5 pts</strong></li>
+                                </ul>
+                            </div>
+                             <div>
+                                <h4 class="font-bold text-indigo-400">Multi-Timeframe Analysis</h4>
+                                <p class="text-sm mt-1">The "deep dive" analysis checks the following related timeframes based on your primary selection:</p>
+                                <table class="w-full text-left text-sm mt-2">
+                                    <thead class="bg-gray-700/50">
+                                        <tr>
+                                            <th class="p-2">Selected Timeframe</th>
+                                            <th class="p-2">Additional Timeframes Screened</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b border-gray-700">
+                                            <td class="p-2">15 Minute</td>
+                                            <td class="p-2">30 Minute, 1 Hour</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-700">
+                                            <td class="p-2">30 Minute</td>
+                                            <td class="p-2">1 Hour, 15 Minute</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-700">
+                                            <td class="p-2">1 Hour</td>
+                                            <td class="p-2">4 Hour, 30 Minute</td>
+                                        </tr>
+                                         <tr class="border-b border-gray-700">
+                                            <td class="p-2">4 Hour</td>
+                                            <td class="p-2">1 Day, 1 Hour</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-2">1 Day</td>
+                                            <td class="p-2">4 Hour, 1 Hour</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </details>
@@ -174,7 +241,9 @@
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white" title="MACD Crossover from Negative / Histogram Ticking Up">MACD</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white" title="Golden Cross / Price > 200 EMA / Price > 55 EMA">Trend</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white" title="High Volume / High Volatility (ATR)">Other</th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Score</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Scan Score</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">MTF Scores</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Confluence Score</th>
                             </tr>
                         </thead>
                         <tbody id="coin-table-body" class="divide-y divide-gray-800">
@@ -185,6 +254,37 @@
             </div>
         </main>
     </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md m-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Webhook Settings</h3>
+                <button id="close-settings-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div>
+                <label for="webhook-url-input" class="block text-sm font-medium text-gray-300 mb-2">Webhook URL</label>
+                <input type="url" id="webhook-url-input" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://your-retool-webhook-url.com">
+                <p class="text-xs text-gray-500 mt-1">Sends a notification when a Top-Tier coin is found.</p>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="test-webhook-btn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors">Test</button>
+                <button id="save-settings-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Modal -->
+    <div id="notification-modal" class="modal-overlay hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg m-4 border-t-4 border-indigo-500">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Notification</h3>
+                <button id="close-notification-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div id="notification-content" class="text-gray-300"></div>
+        </div>
+    </div>
+
 
     <script>
         const API_BASE = 'https://api.binance.com/api/v3/';
@@ -196,7 +296,7 @@
         const redCrossSVG = `<svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`;
 
         let processedCoinsData = []; // Store processed coins globally
-        const timeframeMap = { '30m': '30 Minute', '1h': '1 Hour', '4h': '4 Hour', '1d': '1 Day' };
+        const timeframeMap = { '15m': '15m', '30m': '30m', '1h': '1H', '4h': '4H', '1d': '1D' };
 
         // --- Technical Analysis Indicator Calculations ---
 
@@ -383,6 +483,23 @@
 
             return { score, checks };
         }
+        
+        function calculateConfluenceScore(coin, primaryTimeframe) {
+            const weights = { '1d': 0.25, '4h': 0.4, '1h': 0.25, '30m': 0.1, '15m': 0.05 };
+            weights[primaryTimeframe] = 0.5; // Give primary timeframe more weight
+
+            let totalScore = 0;
+            let totalWeight = 0;
+
+            for (const tf in coin.mtfScores) {
+                if (weights[tf] && typeof coin.mtfScores[tf] === 'number') {
+                    totalScore += coin.mtfScores[tf] * weights[tf];
+                    totalWeight += weights[tf];
+                }
+            }
+            
+            return totalWeight > 0 ? totalScore / totalWeight : 0;
+        }
 
         // --- Main Application Logic ---
 
@@ -396,7 +513,8 @@
             const tableBody = document.getElementById('coin-table-body');
             const subtitle = document.getElementById('subtitle');
             
-            subtitle.textContent = `Top 1000 Binance Altcoins (USDT) Ranked by Philakone's Strategy (${timeframeMap[interval]} Timeframe)`;
+            const timeframeKey = Object.keys(timeframeMap).find(key => timeframeMap[key] === interval) || interval;
+            subtitle.textContent = `Top 1000 Binance Altcoins (USDT) Ranked by Philakone's Strategy (${timeframeMap[timeframeKey]} Timeframe)`;
 
 
             loader.classList.remove('hidden');
@@ -440,30 +558,78 @@
                             price: parseFloat(ticker.lastPrice),
                             change: parseFloat(ticker.priceChangePercent),
                             score,
-                            checks
+                            checks,
+                            mtfScores: { [interval]: score }
                         });
                     } catch (e) {
                         console.error(`Failed to process ${ticker.symbol}:`, e);
                     }
                 }
                 
-                // 3. Sort by final score and display results
-                processedCoinsData.sort((a, b) => b.score - a.score);
+                // 3. Sort by initial scan score
+                processedCoinsData.sort((a,b) => b.score - a.score);
+
+                // 4. Deep Dive on Top 30
+                const top30 = processedCoinsData.slice(0, 30);
+                
+                let otherTimeframes = [];
+                switch (interval) {
+                    case '1d': otherTimeframes = ['4h', '1h']; break;
+                    case '4h': otherTimeframes = ['1d', '1h']; break;
+                    case '1h': otherTimeframes = ['4h', '30m']; break;
+                    case '30m': otherTimeframes = ['1h', '15m']; break;
+                    case '15m': otherTimeframes = ['30m', '1h']; break;
+                }
+                
+                count = 0;
+                for(const coin of top30) {
+                    count++;
+                    progressText.textContent = `Performing deep dive on top coin ${count} of 30...`;
+                    for(const tf of otherTimeframes) {
+                        try {
+                            const klines = await (await fetch(`${API_BASE}${KLINE_ENDPOINT}?symbol=${coin.symbol}&interval=${tf}&limit=250`)).json();
+                            if (klines.length < 200) continue;
+                            const tickerData = allTickers.find(t => t.symbol === coin.symbol);
+                            const { score } = calculateScore(klines, tickerData);
+                            coin.mtfScores[tf] = score;
+                        } catch (e) {
+                           console.error(`Failed deep dive for ${coin.symbol} on ${tf}:`, e);
+                        }
+                    }
+                    coin.confluenceScore = calculateConfluenceScore(coin, interval);
+                }
 
                 loader.classList.add('hidden');
                 summarySection.classList.remove('hidden');
                 resultsTable.classList.remove('hidden');
                 
+                // Create a separate array sorted by confluence for top sections
+                const confluenceSorted = [...processedCoinsData].filter(c => c.confluenceScore).sort((a, b) => b.confluenceScore - a.confluenceScore);
+
                 // Display Top Tier Opportunity
-                const topTierCoin = processedCoinsData.find(c => c.score >= 90);
+                const topTierCoin = confluenceSorted.find(c => c.confluenceScore >= 90);
                 if (topTierCoin) {
                     topTierContainer.innerHTML = `
                         <h3 class="text-2xl font-bold text-center text-yellow-400 mb-2">🏆 Top Tier Opportunity 🏆</h3>
                         <div class="bg-gray-800 p-4 rounded-lg border-2 border-yellow-400 shadow-lg text-center">
                             <h4 class="text-3xl font-bold text-white">${topTierCoin.symbol.replace('USDT', '')}</h4>
-                            <p class="text-xl text-gray-300">Score: <span class="font-bold text-yellow-400">${topTierCoin.score}</span></p>
+                            <p class="text-xl text-gray-300">Confluence Score: <span class="font-bold text-yellow-400">${topTierCoin.confluenceScore.toFixed(0)}</span></p>
                         </div>
                     `;
+                    sendToWebhook({
+                        content: `🏆 New Top-Tier Opportunity Found: **${topTierCoin.symbol.replace('USDT', '')}**`,
+                        embeds: [{
+                            title: `${topTierCoin.symbol}`,
+                            description: `A high-potential trading opportunity has been identified.`,
+                            color: 16766720, // A gold color for the embed
+                            fields: [
+                                { name: 'Confluence Score', value: `**${topTierCoin.confluenceScore.toFixed(0)}**`, inline: true },
+                                { name: 'Price', value: `$${topTierCoin.price.toFixed(4)}`, inline: true },
+                                { name: '24h Change', value: `${topTierCoin.change.toFixed(2)}%`, inline: true }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }]
+                    });
                 } else {
                     topTierContainer.innerHTML = `
                          <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700 text-center">
@@ -474,13 +640,14 @@
 
 
                 // Display Top 3 Coins
-                const top3 = processedCoinsData.slice(0, 3);
+                const top3Display = confluenceSorted.slice(0, 3);
                 topCoinsContainer.innerHTML = `
                     <h3 class="text-2xl font-bold text-center text-white mb-4 mt-8">Top 3 Opportunities</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        ${top3.map((coin, index) => {
-                            const scoreColor = coin.score >= 75 ? 'bg-green-500' : coin.score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
-                             const borderScoreColor = coin.score >= 75 ? 'border-green-500' : coin.score >= 50 ? 'border-yellow-500' : 'border-red-500';
+                        ${top3Display.map((coin, index) => {
+                            const score = coin.confluenceScore || coin.score;
+                            const scoreColor = score >= 75 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+                            const borderScoreColor = score >= 75 ? 'border-green-500' : score >= 50 ? 'border-yellow-500' : 'border-red-500';
                             return `
                                 <div class="bg-gray-800 p-4 rounded-lg border-l-4 ${borderScoreColor} shadow-lg">
                                     <div class="flex justify-between items-center">
@@ -488,7 +655,7 @@
                                             <span class="text-sm text-gray-400">#${index + 1}</span>
                                             <h4 class="text-xl font-bold text-white">${coin.symbol.replace('USDT', '')}</h4>
                                         </div>
-                                        <span class="inline-flex items-center rounded-md px-3 py-1 text-lg font-medium ${scoreColor}">${coin.score}</span>
+                                        <span class="inline-flex items-center rounded-md px-3 py-1 text-lg font-medium ${scoreColor}">${score.toFixed(0)}</span>
                                     </div>
                                 </div>
                             `
@@ -499,7 +666,8 @@
                 // Display full table
                 tableBody.innerHTML = processedCoinsData.map((coin, index) => {
                     const priceChangeColor = coin.change >= 0 ? 'text-green-400' : 'text-red-400';
-                    const scoreColor = coin.score >= 75 ? 'bg-green-500' : coin.score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+                    const score = coin.confluenceScore || coin.score;
+                    const scoreColor = score >= 75 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500';
                     
                     const rsiIcons = `
                         ${createIconWithTooltip(coin.checks.rsiInZone, 'RSI > 40')}
@@ -519,6 +687,8 @@
                         ${createIconWithTooltip(coin.checks.highVolatility, 'High Volatility (ATR)')}
                     `;
                     
+                    const mtfScoresHtml = coin.mtfScores ? Object.entries(coin.mtfScores).filter(([tf]) => tf !== interval).map(([tf, s]) => `<span class="mr-2">${timeframeMap[tf]}: <strong>${s.toFixed(0)}</strong></span>`).join('') : 'N/A';
+                    
                     return `
                         <tr data-symbol="${coin.symbol}">
                             <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">${index + 1}</td>
@@ -529,9 +699,11 @@
                             <td class="px-3 py-4 text-sm"><div class="flex space-x-1">${macdIcons}</div></td>
                             <td class="px-3 py-4 text-sm"><div class="flex space-x-1">${trendIcons}</div></td>
                             <td class="px-3 py-4 text-sm"><div class="flex space-x-1">${otherIcons}</div></td>
+                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-400">${coin.score.toFixed(0)}</td>
+                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-400">${mtfScoresHtml}</td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-white">
                                 <div class="tooltip">
-                                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${scoreColor}">${coin.score}</span>
+                                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${scoreColor}">${score.toFixed(0)}</span>
                                 </div>
                             </td>
                         </tr>
@@ -554,14 +726,54 @@
             `;
         }
         
+        async function sendToWebhook(data, isTest = false) {
+            const webhookUrl = localStorage.getItem('webhookUrl');
+            if (!webhookUrl) {
+                if (isTest) {
+                    alert('Webhook URL is not saved. Please save it in settings.');
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (isTest) {
+                    if (response.ok) {
+                        alert('Test data sent to webhook successfully!');
+                    } else {
+                        alert(`Failed to send test data. Status: ${response.status}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error sending to webhook:', error);
+                if (isTest) {
+                    alert('An error occurred while sending the test request. Check the console.');
+                }
+            }
+        }
+        
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             const refreshBtn = document.getElementById('refresh-btn');
             const timeframeSelect = document.getElementById('timeframe-select');
             const setDefaultBtn = document.getElementById('set-default-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+            const settingsModal = document.getElementById('settings-modal');
+            const closeSettingsBtn = document.getElementById('close-settings-btn');
+            const saveSettingsBtn = document.getElementById('save-settings-btn');
+            const testWebhookBtn = document.getElementById('test-webhook-btn');
+            const webhookUrlInput = document.getElementById('webhook-url-input');
             
             const defaultTimeframe = localStorage.getItem('defaultTimeframe') || '4h';
             timeframeSelect.value = defaultTimeframe;
+            webhookUrlInput.value = localStorage.getItem('webhookUrl') || '';
 
             if(refreshBtn) {
                 refreshBtn.addEventListener('click', () => {
@@ -575,6 +787,38 @@
                     const selectedTimeframe = timeframeSelect.value;
                     localStorage.setItem('defaultTimeframe', selectedTimeframe);
                     alert(`Default timeframe set to ${timeframeMap[selectedTimeframe]}`);
+                });
+            }
+            
+            if(settingsBtn) {
+                settingsBtn.addEventListener('click', () => {
+                    if(settingsModal) settingsModal.classList.remove('hidden');
+                });
+            }
+            if(closeSettingsBtn){
+                closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+            }
+            if(saveSettingsBtn){
+                saveSettingsBtn.addEventListener('click', () => {
+                    if (webhookUrlInput.value) {
+                        localStorage.setItem('webhookUrl', webhookUrlInput.value);
+                        alert('Webhook URL saved!');
+                    }
+                    settingsModal.classList.add('hidden');
+                });
+            }
+            
+            if(testWebhookBtn){
+                testWebhookBtn.addEventListener('click', () => {
+                    const testData = {
+                        content: "This is a test notification from the Crypto Strategy Ranker!",
+                        embeds: [{
+                            title: "✅ Webhook Test Successful",
+                            description: "If you can see this, your webhook is configured correctly.",
+                            color: 5814783
+                        }]
+                    };
+                    sendToWebhook(testData, true);
                 });
             }
 
