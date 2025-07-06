@@ -101,6 +101,7 @@
         <header class="text-center mb-6 relative">
             <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Crypto Strategy Ranker</h1>
             <p id="subtitle" class="text-lg text-gray-400">Top 1000 Binance Altcoins (USDT) Ranked by Philakone's Strategy</p>
+            <div id="countdown" class="text-sm text-indigo-400 mt-2"></div>
             <div class="mt-4 flex justify-center items-center space-x-2">
                 <select id="timeframe-select" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="15m">15 Minute</option>
@@ -109,7 +110,6 @@
                     <option value="4h" selected>4 Hour</option>
                     <option value="1d">1 Day</option>
                 </select>
-                <button id="refresh-btn" class="px-5 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors">Refresh</button>
                 <button id="set-default-btn" class="px-5 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors">Set as Default</button>
             </div>
             <button id="settings-btn" class="absolute top-0 right-0 p-2 text-gray-400 hover:text-white transition-colors">
@@ -267,6 +267,11 @@
                 <input type="url" id="webhook-url-input" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://your-retool-webhook-url.com">
                 <p class="text-xs text-gray-500 mt-1">Sends a notification when a Top-Tier coin is found.</p>
             </div>
+            <div class="mt-4">
+                <label for="webhook-auth-input" class="block text-sm font-medium text-gray-300 mb-2">Webhook Authentication</label>
+                <input type="password" id="webhook-auth-input" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., Bearer your_token_here">
+                <p class="text-xs text-gray-500 mt-1">Enter the full Authorization header value.</p>
+            </div>
             <div class="mt-6 flex justify-end space-x-3">
                 <button id="test-webhook-btn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors">Test</button>
                 <button id="save-settings-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors">Save</button>
@@ -278,7 +283,7 @@
     <div id="notification-modal" class="modal-overlay hidden">
         <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg m-4 border-t-4 border-indigo-500">
              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-white">Notification</h3>
+                <h3 id="notification-title" class="text-xl font-bold text-white">Notification</h3>
                 <button id="close-notification-btn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
             <div id="notification-content" class="text-gray-300"></div>
@@ -296,6 +301,7 @@
         const redCrossSVG = `<svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`;
 
         let processedCoinsData = []; // Store processed coins globally
+        let countdownInterval;
         const timeframeMap = { '15m': '15m', '30m': '30m', '1h': '1H', '4h': '4H', '1d': '1D' };
 
         // --- Technical Analysis Indicator Calculations ---
@@ -599,36 +605,40 @@
                     coin.confluenceScore = calculateConfluenceScore(coin, interval);
                 }
 
+                // 5. Sort by final confluence score
+                processedCoinsData.sort((a, b) => (b.confluenceScore || b.score) - (a.confluenceScore || a.score));
+
                 loader.classList.add('hidden');
                 summarySection.classList.remove('hidden');
                 resultsTable.classList.remove('hidden');
                 
-                // Create a separate array sorted by confluence for top sections
-                const confluenceSorted = [...processedCoinsData].filter(c => c.confluenceScore).sort((a, b) => b.confluenceScore - a.confluenceScore);
-
                 // Display Top Tier Opportunity
-                const topTierCoin = confluenceSorted.find(c => c.confluenceScore >= 90);
-                if (topTierCoin) {
+                const topTierCoins = processedCoinsData.filter(c => c.confluenceScore >= 90);
+                if (topTierCoins.length > 0) {
                     topTierContainer.innerHTML = `
-                        <h3 class="text-2xl font-bold text-center text-yellow-400 mb-2">🏆 Top Tier Opportunity 🏆</h3>
-                        <div class="bg-gray-800 p-4 rounded-lg border-2 border-yellow-400 shadow-lg text-center">
-                            <h4 class="text-3xl font-bold text-white">${topTierCoin.symbol.replace('USDT', '')}</h4>
-                            <p class="text-xl text-gray-300">Confluence Score: <span class="font-bold text-yellow-400">${topTierCoin.confluenceScore.toFixed(0)}</span></p>
+                        <h3 class="text-2xl font-bold text-center text-yellow-400 mb-2">🏆 Top Tier Opportunities 🏆</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            ${topTierCoins.map(coin => `
+                                <div class="bg-gray-800 p-4 rounded-lg border-2 border-yellow-400 shadow-lg text-center">
+                                    <h4 class="text-2xl font-bold text-white">${coin.symbol.replace('USDT', '')}</h4>
+                                    <p class="text-lg text-gray-300">Confluence Score: <span class="font-bold text-yellow-400">${coin.confluenceScore.toFixed(0)}</span></p>
+                                </div>
+                            `).join('')}
                         </div>
                     `;
                     sendToWebhook({
-                        content: `🏆 New Top-Tier Opportunity Found: **${topTierCoin.symbol.replace('USDT', '')}**`,
-                        embeds: [{
-                            title: `${topTierCoin.symbol}`,
+                        content: `🏆 ${topTierCoins.length} Top-Tier Opportunit${topTierCoins.length > 1 ? 'ies' : 'y'} Found!`,
+                        embeds: topTierCoins.map(coin => ({
+                            title: `${coin.symbol}`,
                             description: `A high-potential trading opportunity has been identified.`,
                             color: 16766720, // A gold color for the embed
                             fields: [
-                                { name: 'Confluence Score', value: `**${topTierCoin.confluenceScore.toFixed(0)}**`, inline: true },
-                                { name: 'Price', value: `$${topTierCoin.price.toFixed(4)}`, inline: true },
-                                { name: '24h Change', value: `${topTierCoin.change.toFixed(2)}%`, inline: true }
+                                { name: 'Confluence Score', value: `**${coin.confluenceScore.toFixed(0)}**`, inline: true },
+                                { name: 'Price', value: `$${coin.price.toFixed(4)}`, inline: true },
+                                { name: '24h Change', value: `${coin.change.toFixed(2)}%`, inline: true }
                             ],
                             timestamp: new Date().toISOString()
-                        }]
+                        }))
                     });
                 } else {
                     topTierContainer.innerHTML = `
@@ -640,7 +650,7 @@
 
 
                 // Display Top 3 Coins
-                const top3Display = confluenceSorted.slice(0, 3);
+                const top3Display = processedCoinsData.slice(0, 3);
                 topCoinsContainer.innerHTML = `
                     <h3 class="text-2xl font-bold text-center text-white mb-4 mt-8">Top 3 Opportunities</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -728,6 +738,8 @@
         
         async function sendToWebhook(data, isTest = false) {
             const webhookUrl = localStorage.getItem('webhookUrl');
+            const webhookAuth = localStorage.getItem('webhookAuth');
+            
             if (!webhookUrl) {
                 if (isTest) {
                     alert('Webhook URL is not saved. Please save it in settings.');
@@ -740,6 +752,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': webhookAuth || '',
                     },
                     body: JSON.stringify(data),
                 });
@@ -761,7 +774,6 @@
         
         // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
-            const refreshBtn = document.getElementById('refresh-btn');
             const timeframeSelect = document.getElementById('timeframe-select');
             const setDefaultBtn = document.getElementById('set-default-btn');
             const settingsBtn = document.getElementById('settings-btn');
@@ -770,23 +782,63 @@
             const saveSettingsBtn = document.getElementById('save-settings-btn');
             const testWebhookBtn = document.getElementById('test-webhook-btn');
             const webhookUrlInput = document.getElementById('webhook-url-input');
+            const webhookAuthInput = document.getElementById('webhook-auth-input');
             
-            const defaultTimeframe = localStorage.getItem('defaultTimeframe') || '4h';
+            let defaultTimeframe = localStorage.getItem('defaultTimeframe') || '4h';
             timeframeSelect.value = defaultTimeframe;
-            webhookUrlInput.value = localStorage.getItem('webhookUrl') || '';
+            if(webhookUrlInput) {
+                webhookUrlInput.value = localStorage.getItem('webhookUrl') || '';
+            }
+             if(webhookAuthInput) {
+                webhookAuthInput.value = localStorage.getItem('webhookAuth') || '';
+            }
 
-            if(refreshBtn) {
-                refreshBtn.addEventListener('click', () => {
-                    const selectedTimeframe = timeframeSelect.value;
-                    main(selectedTimeframe);
-                });
+
+            function scheduleNextUpdate() {
+                 if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+                
+                const timeframeDurations = { '15m': 15, '30m': 30, '1h': 60, '4h': 240, '1d': 1440 };
+                const intervalMinutes = timeframeDurations[defaultTimeframe];
+                const msInInterval = intervalMinutes * 60 * 1000;
+                
+                const now = new Date();
+                const lastCandleClose = Math.floor(now.getTime() / msInInterval) * msInInterval;
+                const nextCandleClose = lastCandleClose + msInInterval;
+                const timeToUpdate = nextCandleClose + 60 * 1000; // Add 1 minute
+
+                setTimeout(async () => {
+                    await main(defaultTimeframe);
+                    scheduleNextUpdate();
+                }, timeToUpdate - now.getTime());
+
+                const countdownElement = document.getElementById('countdown');
+                countdownInterval = setInterval(() => {
+                    const nowMs = new Date().getTime();
+                    const remainingMs = timeToUpdate - nowMs;
+
+                    if (remainingMs <= 0) {
+                        countdownElement.textContent = 'Updating...';
+                        clearInterval(countdownInterval);
+                        return;
+                    }
+
+                    const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+
+                    countdownElement.textContent = `Next update in: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }, 1000);
             }
             
             if(setDefaultBtn) {
                 setDefaultBtn.addEventListener('click', () => {
-                    const selectedTimeframe = timeframeSelect.value;
-                    localStorage.setItem('defaultTimeframe', selectedTimeframe);
-                    alert(`Default timeframe set to ${timeframeMap[selectedTimeframe]}`);
+                    defaultTimeframe = timeframeSelect.value;
+                    localStorage.setItem('defaultTimeframe', defaultTimeframe);
+                    alert(`Default timeframe set to ${timeframeMap[defaultTimeframe]}. The page will now refresh automatically based on this timeframe.`);
+                    main(defaultTimeframe);
+                    scheduleNextUpdate();
                 });
             }
             
@@ -800,10 +852,9 @@
             }
             if(saveSettingsBtn){
                 saveSettingsBtn.addEventListener('click', () => {
-                    if (webhookUrlInput.value) {
-                        localStorage.setItem('webhookUrl', webhookUrlInput.value);
-                        alert('Webhook URL saved!');
-                    }
+                    localStorage.setItem('webhookUrl', webhookUrlInput.value);
+                    localStorage.setItem('webhookAuth', webhookAuthInput.value);
+                    alert('Webhook settings saved!');
                     settingsModal.classList.add('hidden');
                 });
             }
@@ -823,6 +874,7 @@
             }
 
             main(defaultTimeframe);
+            scheduleNextUpdate();
         });
     </script>
 </body>
