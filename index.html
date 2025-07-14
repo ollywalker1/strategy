@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Golden Cross Screener</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #e5e7eb;
+        }
+        .table-container {
+            max-height: 70vh;
+            overflow: auto;
+        }
+        .table-container::-webkit-scrollbar, #log-content-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track, #log-content-container::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .table-container::-webkit-scrollbar-thumb, #log-content-container::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+            border-radius: 10px;
+            border: 2px solid #1f2937;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-6 relative">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Crypto Golden Cross Screener</h1>
+            <p id="subtitle" class="text-lg text-gray-400">Screening Binance Altcoins for 55/200 EMA Golden Cross</p>
+            <div id="countdown" class="text-sm text-indigo-400 mt-2"></div>
+            <div class="mt-4 flex justify-center items-center space-x-2">
+                <select id="timeframe-select" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="15m">15 Minute</option>
+                    <option value="30m">30 Minute</option>
+                    <option value="1h">1 Hour</option>
+                    <option value="4h" selected>4 Hour</option>
+                    <option value="1d">1 Day</option>
+                </select>
+                <button id="set-default-btn" class="px-5 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors">Set as Default</button>
+                <button id="log-btn" class="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500 transition-colors">Log</button>
+            </div>
+            <button id="settings-btn" class="absolute top-0 right-0 p-2 text-gray-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-settings"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+        </header>
+
+        <main id="app-container">
+            <div id="loader" class="text-center py-20">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-500 mx-auto"></div>
+                <p class="mt-4 text-lg text-gray-300">Fetching and analyzing 1000 coins...</p>
+                <p id="progress-text" class="text-sm text-gray-500">Initializing...</p>
+            </div>
+            
+            <div id="results-container" class="hidden">
+                 <div id="cross-found-container" class="mb-6">
+                    <!-- Coins with a golden cross will be summarized here -->
+                 </div>
+
+                <div id="results-table" class="bg-gray-900 rounded-lg shadow-2xl overflow-hidden">
+                    <div class="table-container">
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="bg-gray-800 sticky top-0 z-10">
+                                <tr>
+                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">#</th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Coin</th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Price</th>
+                                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">24h Change</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coin-table-body" class="divide-y divide-gray-800">
+                                <!-- Coin data will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md m-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Webhook Settings</h3>
+                <button id="close-settings-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div>
+                <label for="webhook-url-input" class="block text-sm font-medium text-gray-300 mb-2">Webhook URL</label>
+                <input type="url" id="webhook-url-input" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., https://www.growlonix.com/api/signal">
+                <p class="text-xs text-gray-500 mt-1">Sends a notification when a Golden Cross is found.</p>
+            </div>
+            <div class="mt-4">
+                <label for="webhook-auth-input" class="block text-sm font-medium text-gray-300 mb-2">Growlonix Authentication Key</label>
+                <input type="password" id="webhook-auth-input" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your secret key from Growlonix">
+                <p class="text-xs text-gray-500 mt-1">This will be sent as 'key' in the JSON payload.</p>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="test-webhook-btn" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors">Test</button>
+                <button id="save-settings-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Log Modal -->
+    <div id="log-modal" class="modal-overlay hidden">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl m-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Golden Cross Log</h3>
+                <button id="close-log-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="log-content-container" class="table-container" style="max-height: 50vh;">
+                <!-- Log entries will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://api.binance.com/api/v3/';
+        const KLINE_ENDPOINT = 'klines';
+        const TICKER_ENDPOINT = 'ticker/24hr';
+        const EXCHANGE_INFO_ENDPOINT = 'exchangeInfo';
+
+        let countdownInterval;
+        const timeframeMap = { '15m': '15m', '30m': '30m', '1h': '1H', '4h': '4H', '1d': '1D' };
+
+        // --- Technical Analysis Indicator Calculations ---
+
+        /**
+         * Calculates the Exponential Moving Average (EMA) for a given dataset.
+         * @param {number[]} data - Array of closing prices.
+         * @param {number} period - The EMA period (e.g., 55 or 200).
+         * @returns {number[]} An array containing the EMA values.
+         */
+        function calculateEMA(data, period) {
+            const k = 2 / (period + 1);
+            let ema = data.slice(0, period).reduce((sum, val) => sum + val, 0) / period;
+            const emas = Array(period - 1).fill(null);
+            emas.push(ema);
+            for (let i = period; i < data.length; i++) {
+                ema = (data[i] * k) + (ema * (1 - k));
+                emas.push(ema);
+            }
+            return emas;
+        }
+
+        /**
+         * Checks if a Golden Cross (55 EMA crossing above 200 EMA) occurred on the last candle.
+         * @param {Array[]} klines - The candlestick data from the API.
+         * @returns {boolean} - True if a golden cross was detected, false otherwise.
+         */
+        function checkForGoldenCross(klines) {
+            const closes = klines.map(k => parseFloat(k[4]));
+            // We need at least 201 candles to have a current and previous value for the 200 EMA.
+            if (closes.length < 201) {
+                return false;
+            }
+
+            const ema55 = calculateEMA(closes, 55);
+            const ema200 = calculateEMA(closes, 200);
+
+            // Get the EMA values for the last two candles.
+            const prevEma55 = ema55.at(-2);
+            const lastEma55 = ema55.at(-1);
+            const prevEma200 = ema200.at(-2);
+            const lastEma200 = ema200.at(-1);
+
+            // Ensure we have valid numbers to compare.
+            if (prevEma55 === null || lastEma55 === null || prevEma200 === null || lastEma200 === null) {
+                return false;
+            }
+
+            // The Golden Cross condition: 55 was strictly below 200, and now it's above.
+            const crossed = prevEma55 < prevEma200 && lastEma55 > lastEma200;
+
+            return crossed;
+        }
+
+
+        // --- Main Application Logic ---
+
+        /**
+         * The main function to fetch data, run the screener, and update the UI.
+         * @param {string} interval - The timeframe to scan (e.g., '4h', '1d').
+         */
+        async function main(interval = '4h') {
+            const loader = document.getElementById('loader');
+            const progressText = document.getElementById('progress-text');
+            const resultsContainer = document.getElementById('results-container');
+            const crossFoundContainer = document.getElementById('cross-found-container');
+            const tableBody = document.getElementById('coin-table-body');
+            const subtitle = document.getElementById('subtitle');
+            
+            const timeframeKey = Object.keys(timeframeMap).find(key => timeframeMap[key] === interval) || interval;
+            subtitle.textContent = `Screening Binance Altcoins for 55/200 EMA Golden Cross (${timeframeMap[timeframeKey]} Timeframe)`;
+
+            loader.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+
+            try {
+                progressText.textContent = 'Fetching all Binance symbols...';
+                const exchangeInfo = await (await fetch(API_BASE + EXCHANGE_INFO_ENDPOINT)).json();
+                const allTickers = await (await fetch(API_BASE + TICKER_ENDPOINT)).json();
+
+                const usdtSymbols = exchangeInfo.symbols
+                    .filter(s => 
+                        s.status === 'TRADING' && 
+                        s.quoteAsset === 'USDT' &&
+                        s.isSpotTradingAllowed === true &&
+                        !s.symbol.endsWith('UPUSDT') && 
+                        !s.symbol.endsWith('DOWNUSDT')
+                    )
+                    .map(s => s.symbol);
+
+                const top1000 = allTickers
+                    .filter(t => usdtSymbols.includes(t.symbol))
+                    .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
+                    .slice(0, 1000);
+
+                let goldenCrossCoins = [];
+                let count = 0;
+                for (const ticker of top1000) {
+                    count++;
+                    progressText.textContent = `Analyzing coin ${count} of 1000: ${ticker.symbol}...`;
+                    try {
+                        // Fetch enough klines for 200 EMA calculation.
+                        const klines = await (await fetch(`${API_BASE}${KLINE_ENDPOINT}?symbol=${ticker.symbol}&interval=${interval}&limit=250`)).json();
+                        if (klines.length < 201) continue;
+
+                        const hasCrossed = checkForGoldenCross(klines);
+
+                        if (hasCrossed) {
+                            const coinData = {
+                                symbol: ticker.symbol,
+                                price: parseFloat(ticker.lastPrice),
+                                change: parseFloat(ticker.priceChangePercent),
+                            };
+                            goldenCrossCoins.push(coinData);
+                            
+                            // Log the event and send a webhook notification
+                            updateGoldenCrossLog(coinData);
+                            const payload = {
+                                key: localStorage.getItem('webhookAuth') || 'YOUR_SECRET_API_KEY',
+                                exchange_name: "binance",
+                                market: coinData.symbol.replace('USDT', '/USDT'),
+                                action: "create",
+                                algorithm: "golden_cross_screener_55_200",
+                                clientSignalId: `${coinData.symbol}_${new Date().getTime()}`,
+                                comment: `Golden Cross Alert: 55 EMA crossed above 200 EMA on the ${timeframeMap[timeframeKey]} chart for ${coinData.symbol}.`
+                            };
+                            await sendToWebhook(payload);
+                        }
+                    } catch (e) {
+                        console.error(`Failed to process ${ticker.symbol}:`, e);
+                    }
+                }
+                
+                loader.classList.add('hidden');
+                resultsContainer.classList.remove('hidden');
+                
+                if (goldenCrossCoins.length > 0) {
+                    crossFoundContainer.innerHTML = `
+                        <h3 class="text-2xl font-bold text-center text-yellow-400 mb-4">🏆 Golden Cross Detected! 🏆</h3>
+                        <p class="text-center text-gray-300 mb-6">The following ${goldenCrossCoins.length} coin(s) experienced a 55/200 EMA cross on the last candle:</p>
+                    `;
+                    tableBody.innerHTML = goldenCrossCoins.map((coin, index) => {
+                        const priceChangeColor = coin.change >= 0 ? 'text-green-400' : 'text-red-400';
+                        return `
+                            <tr>
+                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">${index + 1}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">${coin.symbol.replace('USDT', '')}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">$${coin.price.toFixed(4)}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm ${priceChangeColor}">${coin.change.toFixed(2)}%</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    crossFoundContainer.innerHTML = `
+                         <div class="bg-gray-800/50 p-6 rounded-lg border border-gray-700 text-center">
+                             <p class="text-xl text-gray-300">No Golden Cross events found in this scan.</p>
+                             <p class="text-gray-500 mt-2">Waiting for the next candle close to scan again.</p>
+                        </div>
+                    `;
+                    tableBody.innerHTML = '';
+                }
+
+            } catch (error) {
+                console.error("Failed to load crypto data:", error);
+                loader.innerHTML = '<p class="text-red-500">Failed to load data. Please try again later.</p>';
+            }
+        }
+        
+        /**
+         * Adds a detected Golden Cross event to the log in localStorage.
+         * @param {object} coin - The coin data object.
+         */
+        function updateGoldenCrossLog(coin) {
+            let log = JSON.parse(localStorage.getItem('goldenCrossLog')) || [];
+            const logEntry = {
+                symbol: coin.symbol,
+                timestamp: new Date().toISOString()
+            };
+            log.unshift(logEntry); 
+            localStorage.setItem('goldenCrossLog', JSON.stringify(log));
+        }
+
+        /**
+         * Displays the log of past Golden Cross events in a modal.
+         */
+        function displayLog() {
+            const logContainer = document.getElementById('log-content-container');
+            const logModal = document.getElementById('log-modal');
+            const log = JSON.parse(localStorage.getItem('goldenCrossLog')) || [];
+
+            if (log.length === 0) {
+                logContainer.innerHTML = `<p class="text-gray-400 text-center">No Golden Cross events have been logged yet.</p>`;
+            } else {
+                let tableHtml = `
+                    <table class="min-w-full divide-y divide-gray-700">
+                        <thead class="bg-gray-800 sticky top-0">
+                            <tr>
+                                <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">Coin</th>
+                                <th class="px-3 py-3.5 text-left text-sm font-semibold text-white">Date & Time Logged</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800">
+                            ${log.map(entry => `
+                                <tr>
+                                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">${entry.symbol.replace('USDT', '')}</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">${new Date(entry.timestamp).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                logContainer.innerHTML = tableHtml;
+            }
+            logModal.classList.remove('hidden');
+        }
+
+        /**
+         * Sends a payload to the configured webhook URL.
+         * @param {object} data - The JSON payload to send.
+         * @param {boolean} isTest - Flag to indicate if this is a test call.
+         */
+        async function sendToWebhook(data, isTest = false) {
+            let webhookUrl = localStorage.getItem('webhookUrl');
+            if (!webhookUrl) {
+                if (isTest) {
+                    alert('Webhook URL is not saved. Please save it in settings.');
+                }
+                return;
+            }
+            if (webhookUrl && !webhookUrl.startsWith('http://') && !webhookUrl.startsWith('https://')) {
+                webhookUrl = 'https://' + webhookUrl;
+            }
+
+            const headers = { 'Content-Type': 'application/json' };
+            
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data),
+                });
+
+                if (isTest) {
+                    if (response.ok) {
+                        alert('Test data sent to webhook successfully!');
+                    } else {
+                        const errorData = await response.json();
+                        alert(`Failed to send test data. Status: ${response.status}. Message: ${errorData.msg || 'No message'}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error sending to webhook:', error);
+                if (isTest) {
+                    alert('An error occurred while sending the test request. Check the console for details.');
+                }
+            }
+        }
+        
+        // --- Event Listeners and Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const timeframeSelect = document.getElementById('timeframe-select');
+            const setDefaultBtn = document.getElementById('set-default-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+            const settingsModal = document.getElementById('settings-modal');
+            const closeSettingsBtn = document.getElementById('close-settings-btn');
+            const saveSettingsBtn = document.getElementById('save-settings-btn');
+            const testWebhookBtn = document.getElementById('test-webhook-btn');
+            const webhookUrlInput = document.getElementById('webhook-url-input');
+            const webhookAuthInput = document.getElementById('webhook-auth-input');
+            
+            const logBtn = document.getElementById('log-btn');
+            const logModal = document.getElementById('log-modal');
+            const closeLogBtn = document.getElementById('close-log-btn');
+
+            let defaultTimeframe = localStorage.getItem('defaultTimeframe') || '4h';
+            timeframeSelect.value = defaultTimeframe;
+            webhookUrlInput.value = localStorage.getItem('webhookUrl') || '';
+            webhookAuthInput.value = localStorage.getItem('webhookAuth') || '';
+            
+            function scheduleNextUpdate() {
+                 if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+                
+                const timeframeDurations = { '15m': 15, '30m': 30, '1h': 60, '4h': 240, '1d': 1440 };
+                const intervalMinutes = timeframeDurations[timeframeSelect.value];
+                const msInInterval = intervalMinutes * 60 * 1000;
+                
+                const now = new Date();
+                const lastCandleClose = Math.floor(now.getTime() / msInInterval) * msInInterval;
+                const nextCandleClose = lastCandleClose + msInInterval;
+                // Add a 1-minute delay to ensure the candle data is available on the API
+                const timeToUpdate = nextCandleClose + (60 * 1000); 
+
+                setTimeout(async () => {
+                    await main(timeframeSelect.value);
+                    scheduleNextUpdate();
+                }, timeToUpdate - now.getTime());
+
+                const countdownElement = document.getElementById('countdown');
+                countdownInterval = setInterval(() => {
+                    const nowMs = new Date().getTime();
+                    const remainingMs = timeToUpdate - nowMs;
+
+                    if (remainingMs <= 0) {
+                        countdownElement.textContent = 'Updating...';
+                        clearInterval(countdownInterval);
+                        return;
+                    }
+
+                    const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+
+                    countdownElement.textContent = `Next update in: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }, 1000);
+            }
+            
+            setDefaultBtn.addEventListener('click', () => {
+                defaultTimeframe = timeframeSelect.value;
+                localStorage.setItem('defaultTimeframe', defaultTimeframe);
+                alert(`Default timeframe set to ${timeframeMap[defaultTimeframe]}. The page will now refresh automatically based on this timeframe.`);
+                main(defaultTimeframe);
+                scheduleNextUpdate();
+            });
+            
+            timeframeSelect.addEventListener('change', () => {
+                const selectedTimeframe = timeframeSelect.value;
+                main(selectedTimeframe);
+                // Note: The automatic scheduler will continue based on the *default* timeframe.
+                // This allows manual checks on other timeframes without resetting the main timer.
+            });
+
+            settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+            closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+            
+            saveSettingsBtn.addEventListener('click', () => {
+                localStorage.setItem('webhookUrl', webhookUrlInput.value);
+                localStorage.setItem('webhookAuth', webhookAuthInput.value);
+                alert('Webhook settings saved!');
+                settingsModal.classList.add('hidden');
+            });
+            
+            testWebhookBtn.addEventListener('click', () => {
+                const testData = {
+                    key: localStorage.getItem('webhookAuth') || 'YOUR_SECRET_API_KEY',
+                    exchange_name: "binance",
+                    market: "USDT/TEST",
+                    action: "create",
+                    algorithm: "test_signal",
+                    clientSignalId: "test_" + Date.now(),
+                    comment: "Test webhook from Crypto Golden Cross Screener - No real trading"
+                };
+                sendToWebhook(testData, true);
+            });
+
+            logBtn.addEventListener('click', displayLog);
+            closeLogBtn.addEventListener('click', () => logModal.classList.add('hidden'));
+
+            // Initial run and schedule
+            main(defaultTimeframe);
+            scheduleNextUpdate();
+        });
+    </script>
+</body>
+</html>
